@@ -1,0 +1,31 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.vivek.tsystem.framework.activity.MainActivity">
+
+    <item
+        android:orderInCategory="1"
+        android:id="@+id/action_search"
+        android:icon="@drawable/ic_search_white_24dp"
+        android:title="@string/action_settings"
+        app:actionViewClass="android.support.v7.widget.SearchView"
+        app:showAsAction="collapseActionView|always" />
+
+    <item
+        android:id="@+id/grid_size_2"
+        android:orderInCategory="1"
+        android:title="Column 2"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/grid_size_3"
+        android:orderInCategory="2"
+        android:title="Column 3"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/grid_size_4"
+        android:orderInCategory="2"
+        android:title="Column 4"
+        app:showAsAction="never" />
+
+</menu>
