@@ -172,6 +172,9 @@ public class MainActivityModel implements Model<MainActivityModel.MainActivityQu
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribeWith(photosRxObserver);
                 break;
+            case DISPOSE_TASKS:
+                cleanUp();
+                break;
 
         }
     }
@@ -215,7 +218,8 @@ public class MainActivityModel implements Model<MainActivityModel.MainActivityQu
 
     public enum MainActivityUA implements IUserAction
     {
-        GET_PHOTOS(1);
+        GET_PHOTOS(1),
+        DISPOSE_TASKS(2);
 
         int id;
         MainActivityUA(int id) {

@@ -108,6 +108,13 @@ public class MainActivity extends BaseActivity implements MvpView<MainActivityMo
         searchItem.setVisible(true);
         searchView = (SearchView) searchItem.getActionView();
         searchView.setQueryHint("Search");
+        searchView.setOnCloseListener(new SearchView.OnCloseListener() {
+            @Override
+            public boolean onClose() {
+                mUserActionListener.onUserAction(MainActivityModel.MainActivityUA.DISPOSE_TASKS,null);
+                return false;
+            }
+        });
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
@@ -208,6 +215,12 @@ public class MainActivity extends BaseActivity implements MvpView<MainActivityMo
                     return;
                 }
                 setUpGridRecycler(model.getPhotoList());
+                break;
+            case DISPOSE_TASKS:
+                if(mRefreshLayout.isRefreshing()){
+                    mRefreshLayout.setRefreshing(false);
+                    mRefreshLayout.setEnabled(false);
+                }
                 break;
         }
     }
