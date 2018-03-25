@@ -1,8 +1,10 @@
 package com.vivek.tsystem.framework.activity;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.RecyclerView;
@@ -37,10 +39,16 @@ import java.util.List;
 
 import javax.inject.Inject;
 
+import pub.devrel.easypermissions.AfterPermissionGranted;
+import pub.devrel.easypermissions.AppSettingsDialog;
+import pub.devrel.easypermissions.EasyPermissions;
+
 @SuppressWarnings("unchecked")
-public class MainActivity extends BaseActivity implements MvpView<MainActivityModel,MainActivityModel.MainActivityQuery,MainActivityModel.MainActivityUA> {
+public class MainActivity extends BaseActivity implements MvpView<MainActivityModel,MainActivityModel.MainActivityQuery,MainActivityModel.MainActivityUA> ,EasyPermissions.PermissionCallbacks{
 
     private static final String TAG = MainActivity.class.getSimpleName();
+    private static final int RC_SETTINGS_SCREEN_PERM = 123;
+    private static final int RC_FILE_STORAGE_APP_PERM = 124;
 
     private UserActionListener mUserActionListener;
     private PresenterImpl mPresenter;
@@ -127,7 +135,7 @@ public class MainActivity extends BaseActivity implements MvpView<MainActivityMo
                 }
                 mSearchString = query;
                 mPage = 1;
-                getPhotos();
+                requestPermissionsAndGetPhotos();
                 Utility.hideSoftKeyboard(searchView);
                 searchView.clearFocus();
                 return false;
@@ -258,27 +266,6 @@ public class MainActivity extends BaseActivity implements MvpView<MainActivityMo
         mUserActionListener = listener;
     }
 
-    private void getPhotos(){
-        getPhotos(mSearchString);
-    }
-    /**
-     * get photos
-     * @param searchString search string
-     */
-    private void getPhotos(String searchString){
-        if(TextUtils.isEmpty(searchString)) {
-            return;
-        }
-        mRefreshLayout.setEnabled(true);
-        if(!mRefreshLayout.isRefreshing()){
-            mRefreshLayout.setRefreshing(true);
-        }
-        Bundle bundle =  new Bundle();
-        bundle.putInt(Constants.Bundle.PAGE,mPage);
-        bundle.putInt(Constants.Bundle.LIMIT,mLimit);
-        bundle.putString(Constants.Bundle.TEXT,searchString);
-        mUserActionListener.onUserAction(MainActivityModel.MainActivityUA.GET_PHOTOS,bundle);
-    }
 
     /**
      * Set up grid recycler and refresh its values
@@ -316,7 +303,7 @@ public class MainActivity extends BaseActivity implements MvpView<MainActivityMo
                 //> load more pages
                 if (index == getItemCount() - 1 && !mNoMoreData) {
                     ++mPage;
-                    getPhotos();
+                    requestPermissionsAndGetPhotos();
                 }
             }
 
@@ -341,6 +328,58 @@ public class MainActivity extends BaseActivity implements MvpView<MainActivityMo
         mRecycler.refreshView();
         frame_content.removeAllViews();
         frame_content.addView(mRecycler,FrameLayout.LayoutParams.MATCH_PARENT,FrameLayout.LayoutParams.MATCH_PARENT);
+    }
+
+    @AfterPermissionGranted(RC_FILE_STORAGE_APP_PERM)
+    private void requestPermissionsAndGetPhotos() {
+
+        String[] perms = { Manifest.permission.WRITE_EXTERNAL_STORAGE };
+        if (EasyPermissions.hasPermissions(this, perms)) {
+            if(TextUtils.isEmpty(mSearchString)) {
+                return;
+            }
+            mRefreshLayout.setEnabled(true);
+            if(!mRefreshLayout.isRefreshing()){
+                mRefreshLayout.setRefreshing(true);
+            }
+            Bundle bundle =  new Bundle();
+            bundle.putInt(Constants.Bundle.PAGE,mPage);
+            bundle.putInt(Constants.Bundle.LIMIT,mLimit);
+            bundle.putString(Constants.Bundle.TEXT,mSearchString);
+            mUserActionListener.onUserAction(MainActivityModel.MainActivityUA.GET_PHOTOS,bundle);
+        } else {
+            EasyPermissions.requestPermissions(this, getString(R.string.rationale_app_perm), RC_FILE_STORAGE_APP_PERM, perms);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this);
+    }
+
+    @Override
+    public void onPermissionsGranted(int requestCode, List<String> perms) {
+        LogUtil.d(TAG, "onPermissionsGranted:" + requestCode + ":" + perms.size());
+    }
+
+    @Override
+    public void onPermissionsDenied(int requestCode, List<String> perms) {
+        LogUtil.d(TAG, "onPermissionsDenied:" + requestCode + ":" + perms.size());
+
+        if (EasyPermissions.somePermissionPermanentlyDenied(this, perms)) {
+            new AppSettingsDialog.Builder(this)
+                    .setTitle(getString(R.string.title_settings_dialog))
+                    .setRationale(getString(R.string.rationale_ask_again))
+                    .setPositiveButton(getString(R.string.setting))
+                    .setNegativeButton(getString(R.string.cancel))
+                    .setRequestCode(RC_SETTINGS_SCREEN_PERM)
+                    .build()
+                    .show();
+            return;
+        }
+        this.finish();
     }
 
     private class GridViewHolder extends RecyclerView.ViewHolder{
